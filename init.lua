@@ -953,11 +953,11 @@ require("lazy").setup({
 			--
 			-- - saiw) - [S]urround [A]dd [I]nner [W]ord [)]Paren
 			-- - sd'   - [S]urround [D]elete [']quotes
-			-- - sr)'  - [S]urround [R]eplace [)] [']
+			-- - sr)'  - [S]urround [R]eplace [)] ["]
 			require("mini.surround").setup()
 
 			-- Simple and easy statusline.
-			--  You could remove this setup call if you don't like it,
+			--  You could remove this setup call if you don"t like it,
 			--  and try some other statusline plugin
 			local statusline = require("mini.statusline")
 			-- set use_icons to true if you have a Nerd Font
@@ -993,6 +993,8 @@ require("lazy").setup({
 				"query",
 				"vim",
 				"vimdoc",
+				"python",
+				"java",
 			},
 			-- Autoinstall languages that are not installed
 			auto_install = true,
@@ -1022,11 +1024,11 @@ require("lazy").setup({
 	--  Here are some example plugins that I've included in the Kickstart repository.
 	--  Uncomment any of the lines below to enable them (you will need to restart nvim).
 	--
-	-- require 'kickstart.plugins.debug',
+	require("kickstart.plugins.debug"),
 	-- require 'kickstart.plugins.indent_line',
 	-- require 'kickstart.plugins.lint',
 	-- require 'kickstart.plugins.autopairs',
-	-- require 'kickstart.plugins.neo-tree',
+	require("kickstart.plugins.neo-tree"),
 	-- require 'kickstart.plugins.gitsigns', -- adds gitsigns recommend keymaps
 
 	-- NOTE: The import below can automatically add your own plugins, configuration, etc from `lua/custom/plugins/*.lua`
