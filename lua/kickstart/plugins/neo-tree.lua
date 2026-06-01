@@ -13,6 +13,7 @@ return {
 	keys = {
 		{ "\\", ":Neotree reveal<CR>", desc = "NeoTree reveal", silent = true },
 	},
+	priority = 950,
 	opts = {
 		filesystem = {
 			window = {
