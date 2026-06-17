@@ -142,12 +142,31 @@ vim.api.nvim_create_autocmd("PackChanged", {
 vim.pack.add({ "https://github.com/nvim-tree/nvim-web-devicons" })
 vim.pack.add({ "https://github.com/NMAC427/guess-indent.nvim" })
 require("guess-indent").setup({})
+
 vim.pack.add({ { src = "https://github.com/catppuccin/nvim", name = "catppuccin" } })
 vim.cmd.colorscheme("catppuccin-mocha")
+
 vim.pack.add({ "https://github.com/folke/todo-comments.nvim" })
-vim.pack.add({ "nvim-mini/mini.nvim" })
+require("todo-comments").setup({ signs = false })
+
+vim.pack.add({ "https://github.com/folke/which-key.nvim" })
+require("which-key").setup({
+	-- Delay between pressing a key and opening which-key (milliseconds)
+	delay = 0,
+	icons = { mappings = vim.g.have_nerd_font },
+	-- Document existing key chains
+	spec = {
+		{ "<leader>s", group = "[S]earch", mode = { "n", "v" } },
+		{ "<leader>t", group = "[T]oggle" },
+		{ "<leader>h", group = "Git [H]unk", mode = { "n", "v" } }, -- Enable gitsigns recommended keymaps first
+		{ "gr", group = "LSP Actions", mode = { "n" } },
+	},
+})
+
+vim.pack.add({ "https://github.com/nvim-mini/mini.nvim" })
 local statusline = require("mini.statusline")
 statusline.setup({ use_icons = vim.g.have_nerd_font })
+---@diagnostic disable-next-line: duplicate-set-field
 statusline.section_location = function()
 	return "%2l:%-2v"
 end
