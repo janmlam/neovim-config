@@ -5,6 +5,12 @@ vim.pack.add({
 	"https://github.com/mason-org/mason.nvim",
 	"https://github.com/jay-babu/mason-nvim-dap.nvim",
 	"https://github.com/leoluz/nvim-dap-go",
+	{
+		src = "https://github.com/JavaHello/spring-boot.nvim",
+		version = "218c0c26c14d99feca778e4d13f5ec3e8b1b60f0",
+	},
+	"https://github.com/MunifTanjim/nui.nvim",
+	"https://github.com/nvim-java/nvim-java",
 })
 
 -- Basic debugging keymaps, feel free to change to your liking!
@@ -113,3 +119,29 @@ require("dap-go").setup({
 vim.keymap.set("n", "<leader>dt", function()
 	require("dap-go").debug_test()
 end)
+dap.configurations.go = {
+	{
+		type = "delve",
+		name = "Debug",
+		request = "launch",
+		program = "${file}",
+	},
+	{
+		type = "delve",
+		name = "Debug test", -- configuration for debugging test files
+		request = "launch",
+		mode = "test",
+		program = "${file}",
+	},
+	-- works with go.mod packages and sub packages
+	{
+		type = "delve",
+		name = "Debug test (go.mod)",
+		request = "launch",
+		mode = "test",
+		program = "./${relativeFileDirname}",
+	},
+}
+
+require("java").setup()
+vim.lsp.enable("jdtls")
