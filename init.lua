@@ -46,6 +46,23 @@ end)
 
 -- keymappings
 vim.keymap.set("n", "<Esc>", "<cmd>nohlsearch<CR>")
+
+local term = { buf = nil, win = nil }
+local function toggle_term()
+	if term.win and vim.api.nvim_win_is_valid(term.win) then
+		vim.api.nvim_win_close(term.win, true)
+		term.win = nil
+		term.buf = nil
+	else
+		vim.cmd("belowright split")
+		term.win = vim.api.nvim_get_current_win()
+		vim.cmd("terminal")
+		term.buf = vim.api.nvim_get_current_buf()
+		vim.cmd("startinsert")
+	end
+end
+
+vim.keymap.set("n", "<leader><leader>t", toggle_term, { noremap = true, silent = true, desc = "[T]erminal" })
 vim.keymap.set("t", "<Esc><Esc>", "<C-\\><C-n>", { desc = "Exit terminal mode" })
 
 vim.keymap.set("n", "<C-d>", "<C-d>zz")
@@ -66,8 +83,8 @@ vim.keymap.set("n", "K", "mz:m .-2<CR>`z")
 vim.keymap.set("n", "j", "gj")
 vim.keymap.set("n", "k", "gk")
 
-vim.keymap.set({ "n", "v" }, "<leader>d", [["_d]])
-vim.keymap.set("x", "<leader>p", [["_dP]])
+vim.keymap.set({ "n", "v" }, "<leader>d", [["_d]], { desc = "[D]elete without register" })
+vim.keymap.set("x", "<leader>p", [["_dP]], { desc = "[P]aste without register" })
 vim.keymap.set("n", "Q", "<nop>")
 
 vim.keymap.set("v", "<", "<gv")
@@ -85,6 +102,11 @@ vim.api.nvim_create_autocmd("TextYankPost", {
 		vim.hl.on_yank()
 	end,
 })
+
+vim.keymap.set("n", "<C-S-h>", "<C-w>H", { desc = "Move window to the left" })
+vim.keymap.set("n", "<C-S-l>", "<C-w>L", { desc = "Move window to the right" })
+vim.keymap.set("n", "<C-S-j>", "<C-w>J", { desc = "Move window to the lower" })
+vim.keymap.set("n", "<C-S-k>", "<C-w>K", { desc = "Move window to the upper" })
 
 local function reload_config()
 	vim.cmd("source " .. vim.fn.expand("$MYVIMRC"))
@@ -159,11 +181,13 @@ require("which-key").setup({
 		{ "<leader>s", group = "[S]earch", mode = { "n", "v" } },
 		{ "<leader>t", group = "[T]oggle" },
 		{ "<leader>h", group = "Git [H]unk", mode = { "n", "v" } }, -- Enable gitsigns recommended keymaps first
-		{ "gr", group = "LSP Actions", mode = { "n" } },
+		{ "g", group = "LSP Actions", mode = { "n" } },
 	},
 })
 
+-- mini.nvim
 vim.pack.add({ "https://github.com/nvim-mini/mini.nvim" })
+
 local statusline = require("mini.statusline")
 statusline.setup({ use_icons = vim.g.have_nerd_font })
 ---@diagnostic disable-next-line: duplicate-set-field
@@ -171,6 +195,10 @@ statusline.section_location = function()
 	return "%2l:%-2v"
 end
 
+vim.pack.add({ "https://github.com/MeanderingProgrammer/render-markdown.nvim" })
+require("render-markdown").setup({
+	file_types = { "markdown", "vimwiki", "codecompanion" },
+})
 -- search plugins
 local telescope_plugins = {
 	"https://github.com/nvim-lua/plenary.nvim",
@@ -180,25 +208,55 @@ local telescope_plugins = {
 if vim.fn.executable("make") == 1 then
 	table.insert(telescope_plugins, "https://github.com/nvim-telescope/telescope-fzf-native.nvim")
 end
+
 vim.pack.add(telescope_plugins)
-require("telescope").setup({})
-pcall(require("telescope").load_extension, "fzf")
-pcall(require("telescope").load_extension, "ui-select")
+local actions = require("telescope.actions")
 local builtin = require("telescope.builtin")
+local telescope = require("telescope")
+telescope.setup({
+	oldfiles = {
+		cwd_only = true,
+	},
+	buffers = {
+		ignore_current_buffer = true,
+		sort_lastused = true,
+	},
+	defaults = {
+		mappings = {
+			i = {
+				--				["<CR>"] = actions.select_vertical,
+				["<C-x>"] = actions.delete_buffer,
+			},
+		},
+	},
+})
+pcall(telescope.load_extension, "fzf")
+pcall(telescope.load_extension, "ui-select")
+vim.keymap.set("n", "<leader>ss", builtin.builtin, { desc = "[S]earch [S]elect Telescope" })
+vim.keymap.set("n", "<leader>sa", builtin.live_grep, { desc = "[S]earch [A]nywhere by live grep" })
+vim.keymap.set("n", "<leader>sb", builtin.buffers, { desc = "[S] existing [B]uffers" })
+vim.keymap.set("n", "<leader>sc", builtin.commands, { desc = "[S]earch [C]ommands" })
+vim.keymap.set("n", "<leader>sd", builtin.diagnostics, { desc = "[S]earch [D]iagnostics" })
+vim.keymap.set("n", "<leader>se", builtin.oldfiles, { desc = '[S]earch R[E]cent Files ("." for repeat)' })
+vim.keymap.set("n", "<leader>sf", builtin.find_files, { desc = "[S]earch [F]iles" })
 vim.keymap.set("n", "<leader>sh", builtin.help_tags, { desc = "[S]earch [H]elp" })
 vim.keymap.set("n", "<leader>sk", builtin.keymaps, { desc = "[S]earch [K]eymaps" })
-vim.keymap.set("n", "<leader>sf", builtin.find_files, { desc = "[S]earch [F]iles" })
-vim.keymap.set("n", "<leader>ss", builtin.builtin, { desc = "[S]earch [S]elect Telescope" })
-vim.keymap.set({ "n", "v" }, "<leader>sw", builtin.grep_string, { desc = "[S]earch current [W]ord" })
-vim.keymap.set("n", "<leader>sg", builtin.live_grep, { desc = "[S]earch by [G]rep" })
-vim.keymap.set("n", "<leader>sd", builtin.diagnostics, { desc = "[S]earch [D]iagnostics" })
-vim.keymap.set("n", "<leader>sr", builtin.resume, { desc = "[S]earch [R]esume" })
-vim.keymap.set("n", "<leader>s.", builtin.oldfiles, { desc = '[S]earch Recent Files ("." for repeat)' })
-vim.keymap.set("n", "<leader>sc", builtin.commands, { desc = "[S]earch [C]ommands" })
-vim.keymap.set("n", "<leader><leader>", builtin.buffers, { desc = "[ ] Find existing buffers" })
 vim.keymap.set("n", "<leader>sn", function()
 	builtin.find_files({ cwd = vim.fn.stdpath("config") })
 end, { desc = "[S]earch [N]eovim files" })
+vim.keymap.set("n", "<leader>sr", builtin.resume, { desc = "[S]earch [R]esume" })
+vim.keymap.set({ "n", "v" }, "<leader>sw", builtin.grep_string, { desc = "[S]earch current [W]ord" })
+vim.keymap.set("n", "<leader>s/", function()
+	builtin.current_buffer_fuzzy_find(require("telescope.themes").get_dropdown({
+		winblend = 10,
+		previewer = false,
+		-- attach_mappings = function(_, map)
+		-- 	-- use the normal (non‑split) action for this picker
+		-- 	map("i", "<CR>", actions.select_default)
+		-- 	return true
+		-- end,
+	}))
+end, { desc = "[S]earch by f[/]f in current buffer" })
 
 vim.api.nvim_create_autocmd("LspAttach", {
 	group = vim.api.nvim_create_augroup("telescope-lsp-attach", { clear = true }),
@@ -236,6 +294,25 @@ vim.api.nvim_create_autocmd("LspAttach", {
 		vim.keymap.set("n", "gt", builtin.lsp_type_definitions, { buffer = buf, desc = "[G]oto [T]ype Definition" })
 	end,
 })
+
+vim.pack.add({
+	"https://github.com/lewis6991/async.nvim",
+	"https://github.com/theprimeagen/refactoring.nvim",
+})
+
+local rectoring = require("refactoring")
+vim.keymap.set({ "n", "x" }, "<leader>re", function()
+	return rectoring.extract_func()
+end, { desc = "[R]efactor by [E]xtracting function", expr = true })
+
+vim.keymap.set({ "n", "x" }, "<leader>rv", function()
+	return rectoring.extract_var()
+end, { desc = "[R]efactor by extracting [V]ariable", expr = true })
+
+vim.keymap.set({ "n", "x" }, "<leader>ri", function()
+	return rectoring.inline_var()
+end, { desc = "[R]efactor by [I]nlining Variable", expr = true })
+
 -- lsp plugins
 vim.pack.add({ "https://github.com/j-hui/fidget.nvim" })
 require("fidget").setup({})
@@ -254,7 +331,7 @@ vim.api.nvim_create_autocmd("LspAttach", {
 
 		-- Rename the variable under your cursor.
 		--  Most Language Servers support renaming across files, etc.
-		map("grn", vim.lsp.buf.rename, "[R]e[n]ame")
+		map("<leader>rn", vim.lsp.buf.rename, "[R]e[n]ame")
 
 		-- Execute a code action, usually your cursor needs to be on top of an error
 		-- or a suggestion from your LSP for this to activate.
@@ -262,7 +339,7 @@ vim.api.nvim_create_autocmd("LspAttach", {
 
 		-- WARN: This is not Goto Definition, this is Goto Declaration.
 		--  For example, in C this would take you to the header.
-		map("grD", vim.lsp.buf.declaration, "[G]oto [D]eclaration")
+		map("gD", vim.lsp.buf.declaration, "[G]oto [D]eclaration")
 
 		-- The following two autocommands are used to highlight references of the
 		-- word under your cursor when your cursor rests there for a little while.
