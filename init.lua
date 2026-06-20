@@ -31,7 +31,7 @@ vim.o.splitright = true
 vim.o.splitbelow = true
 
 vim.o.list = true
-vim.opt.listchars = { tab = "» ", trail = "·", nbsp = "␣" }
+vim.opt.listchars = { tab = "│ ", trail = "·", nbsp = "␣" }
 
 vim.o.inccommand = "split"
 vim.o.cursorline = true
@@ -165,6 +165,36 @@ vim.pack.add({ "https://github.com/nvim-tree/nvim-web-devicons" })
 vim.pack.add({ "https://github.com/NMAC427/guess-indent.nvim" })
 require("guess-indent").setup({})
 
+vim.pack.add({ "https://github.com/lukas-reineke/indent-blankline.nvim" })
+local highlight = {
+	"RainbowRed",
+	"RainbowYellow",
+	"RainbowBlue",
+	"RainbowOrange",
+	"RainbowGreen",
+	"RainbowViolet",
+	"RainbowCyan",
+}
+
+local hooks = require("ibl.hooks")
+hooks.register(hooks.type.HIGHLIGHT_SETUP, function()
+	vim.api.nvim_set_hl(0, "RainbowRed", { fg = "#E06C75" })
+	vim.api.nvim_set_hl(0, "RainbowYellow", { fg = "#E5C07B" })
+	vim.api.nvim_set_hl(0, "RainbowBlue", { fg = "#61AFEF" })
+	vim.api.nvim_set_hl(0, "RainbowOrange", { fg = "#D19A66" })
+	vim.api.nvim_set_hl(0, "RainbowGreen", { fg = "#98C379" })
+	vim.api.nvim_set_hl(0, "RainbowViolet", { fg = "#C678DD" })
+	vim.api.nvim_set_hl(0, "RainbowCyan", { fg = "#56B6C2" })
+end)
+
+require("ibl").setup({
+	indent = {
+		char = "│",
+		tab_char = "│",
+		highlight = highlight,
+	},
+})
+
 vim.pack.add({ { src = "https://github.com/catppuccin/nvim", name = "catppuccin" } })
 vim.cmd.colorscheme("catppuccin-mocha")
 
@@ -194,6 +224,8 @@ statusline.setup({ use_icons = vim.g.have_nerd_font })
 statusline.section_location = function()
 	return "%2l:%-2v"
 end
+
+require("mini.pairs").setup()
 
 vim.pack.add({ "https://github.com/MeanderingProgrammer/render-markdown.nvim" })
 require("render-markdown").setup({
@@ -382,8 +414,8 @@ vim.api.nvim_create_autocmd("LspAttach", {
 	end,
 })
 local servers = {
-	-- gopls = {},
-	stylua = {}, -- Used to format Lua code
+	gopls = {},
+	stylua = {},
 
 	-- Special Lua Config, as recommended by neovim help docs
 	lua_ls = {
@@ -443,6 +475,7 @@ require("mason").setup({})
 local ensure_installed = vim.tbl_keys(servers or {})
 vim.list_extend(ensure_installed, {
 	-- You can add other tools here that you want Mason to install
+	table.insert(ensure_installed, "gopls"),
 })
 
 require("mason-tool-installer").setup({ ensure_installed = ensure_installed })
@@ -518,8 +551,6 @@ require("blink.cmp").setup({
 	},
 
 	appearance = {
-		-- 'mono' (default) for 'Nerd Font Mono' or 'normal' for 'Nerd Font'
-		-- Adjusts spacing to ensure icons are aligned
 		nerd_font_variant = "mono",
 	},
 
@@ -589,3 +620,6 @@ vim.keymap.set("v", "ga", "<cmd>CodeCompanionChat Add<cr>", { noremap = true, si
 
 -- Expand 'cc' into 'CodeCompanion' in the command line
 vim.cmd([[cab cc CodeCompanion]])
+
+-- Plugin modules
+require("plugins.dap")
