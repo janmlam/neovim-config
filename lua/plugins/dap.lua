@@ -8,30 +8,36 @@ vim.pack.add({
 })
 
 -- Basic debugging keymaps, feel free to change to your liking!
-vim.keymap.set("n", "<F5>", function()
-	require("dap").continue()
-end, { desc = "Debug: Start/Continue" })
-vim.keymap.set("n", "<F11>", function()
-	require("dap").step_into()
-end, { desc = "Debug: Step Into" })
-vim.keymap.set("n", "<F10>", function()
-	require("dap").step_over()
-end, { desc = "Debug: Step Over" })
-vim.keymap.set("n", "<F12>", function()
-	require("dap").step_out()
-end, { desc = "Debug: Step Out" })
+local dap = require("dap")
+
 vim.keymap.set("n", "<LocalLeader>b", function()
-	require("dap").toggle_breakpoint()
+	dap.toggle_breakpoint()
 end, { desc = "Debug: Toggle Breakpoint" })
+
 vim.keymap.set("n", "<LocalLeader>B", function()
-	require("dap").set_breakpoint(vim.fn.input("Breakpoint condition: "))
+	dap.set_breakpoint(vim.fn.input("Breakpoint condition: "))
 end, { desc = "Debug: Set Breakpoint" })
--- Toggle to see last session result. Without this, you can't see session output in case of unhandled exception.
+
+vim.keymap.set("n", "<F5>", function()
+	dap.continue()
+end, { desc = "Debug: Start/Continue" })
+
 vim.keymap.set("n", "<F7>", function()
 	require("dapui").toggle()
 end, { desc = "Debug: See last session result." })
 
-local dap = require("dap")
+vim.keymap.set("n", "<F12>", function()
+	dap.step_out()
+end, { desc = "Debug: Step Out" })
+
+vim.keymap.set("n", "<F10>", function()
+	dap.step_over()
+end, { desc = "Debug: Step Over" })
+
+vim.keymap.set("n", "<F11>", function()
+	dap.step_into()
+end, { desc = "Debug: Step Into" })
+
 local dapui = require("dapui")
 
 require("mason-nvim-dap").setup({
@@ -103,3 +109,7 @@ require("dap-go").setup({
 		detached = vim.fn.has("win32") == 0,
 	},
 })
+
+vim.keymap.set("n", "<leader>dt", function()
+	require("dap-go").debug_test()
+end)
