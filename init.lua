@@ -254,6 +254,7 @@ telescope.setup({
 		sort_lastused = true,
 	},
 	defaults = {
+		path_display = { "smart" },
 		mappings = {
 			i = {
 				--				["<CR>"] = actions.select_vertical,
