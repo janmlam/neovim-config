@@ -38,6 +38,10 @@
       "rev": "d28a3f70721c79e3c5f6693057ae929f3d9c0a03",
       "src": "https://github.com/lukas-reineke/indent-blankline.nvim"
     },
+    "intellij-lsp.nvim": {
+      "rev": "77dc3e118a381e59f0d0b3e368e4b3a088280ab7",
+      "src": "https://github.com/JetBrains/intellij-lsp.nvim"
+    },
     "mason-lspconfig.nvim": {
       "rev": "0a695750d747db1e7e70bcf0267ef8951c95fc83",
       "src": "https://github.com/mason-org/mason-lspconfig.nvim"

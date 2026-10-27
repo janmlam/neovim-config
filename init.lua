@@ -112,7 +112,7 @@ local function reload_config()
 	vim.cmd("source " .. vim.fn.expand("$MYVIMRC"))
 	vim.notify("⚡️ init.lua reloaded", vim.log.levels.INFO, { title = "Neovim" })
 end
-vim.keymap.set("n", "<leader><leader>r", reload_config, { desc = "[R]eload Neovim config" })
+vim.keymap.set("n", "<leader><leader><leader>r", reload_config, { desc = "[R]eload Neovim config" })
 vim.keymap.set("n", "<leader>q", vim.diagnostic.setloclist, { desc = "Open diagnostic [Q]uickfix list" })
 
 -- Builder func
@@ -212,6 +212,8 @@ require("which-key").setup({
 		{ "<leader>t", group = "[T]oggle" },
 		{ "<leader>h", group = "Git [H]unk", mode = { "n", "v" } }, -- Enable gitsigns recommended keymaps first
 		{ "g", group = "LSP Actions", mode = { "n" } },
+		{ "<leader>c", group = "[C]ode hierarchy" },
+		{ "<LocalLeader>", group = "Run/Debug" },
 	},
 })
 
@@ -374,6 +376,9 @@ vim.api.nvim_create_autocmd("LspAttach", {
 		--  For example, in C this would take you to the header.
 		map("gD", vim.lsp.buf.declaration, "[G]oto [D]eclaration")
 
+		-- K is taken by move line up
+		map("gh", vim.lsp.buf.hover, "Hover")
+
 		-- The following two autocommands are used to highlight references of the
 		-- word under your cursor when your cursor rests there for a little while.
 		--    See `:help CursorHold` for information about when this is executed
@@ -478,6 +483,7 @@ vim.list_extend(ensure_installed, {
 	-- You can add other tools here that you want Mason to install
 	table.insert(ensure_installed, "gopls"),
 })
+table.insert(ensure_installed, "tree-sitter-cli") -- nvim-treesitter builds parsers with it
 
 require("mason-tool-installer").setup({ ensure_installed = ensure_installed })
 
@@ -485,6 +491,18 @@ for name, server in pairs(servers) do
 	vim.lsp.config(name, server)
 	vim.lsp.enable(name)
 end
+
+-- treesitter (after mason, which puts tree-sitter-cli on PATH)
+vim.pack.add({ { src = "https://github.com/nvim-treesitter/nvim-treesitter", version = "main" } })
+local ts_languages = { "java", "go" }
+require("nvim-treesitter").install(ts_languages)
+vim.api.nvim_create_autocmd("FileType", {
+	pattern = ts_languages,
+	callback = function()
+		-- fails until the async install above has finished on a fresh machine
+		pcall(vim.treesitter.start)
+	end,
+})
 
 -- formatting
 vim.pack.add({ "https://github.com/stevearc/conform.nvim" })
@@ -546,6 +564,8 @@ require("blink.cmp").setup({
 		preset = "default",
 
 		["<C-CR>"] = { "select_and_accept", "fallback" },
+		-- fallback keeps mini.pairs' <CR> when the menu is closed
+		["<CR>"] = { "accept", "fallback" },
 
 		-- For more advanced Luasnip keymaps (e.g. selecting choice nodes, expansion) see:
 		--    https://github.com/L3MON4D3/LuaSnip?tab=readme-ov-file#keymaps
@@ -624,3 +644,4 @@ vim.cmd([[cab cc CodeCompanion]])
 
 -- Plugin modules
 require("plugins.dap")
+require("plugins.intellij-lsp")
