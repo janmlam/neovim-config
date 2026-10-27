@@ -5,12 +5,7 @@ vim.pack.add({
 	"https://github.com/mason-org/mason.nvim",
 	"https://github.com/jay-babu/mason-nvim-dap.nvim",
 	"https://github.com/leoluz/nvim-dap-go",
-	{
-		src = "https://github.com/JavaHello/spring-boot.nvim",
-		version = "218c0c26c14d99feca778e4d13f5ec3e8b1b60f0",
-	},
 	"https://github.com/MunifTanjim/nui.nvim",
-	"https://github.com/nvim-java/nvim-java",
 })
 
 -- Basic debugging keymaps, feel free to change to your liking!
@@ -24,25 +19,29 @@ vim.keymap.set("n", "<LocalLeader>B", function()
 	dap.set_breakpoint(vim.fn.input("Breakpoint condition: "))
 end, { desc = "Debug: Set Breakpoint" })
 
-vim.keymap.set("n", "<F5>", function()
-	dap.continue()
-end, { desc = "Debug: Start/Continue" })
+vim.keymap.set("n", "<LocalLeader>X", function()
+	dap.clear_breakpoints()
+end, { desc = "Debug: Clear all breakpoints" })
 
-vim.keymap.set("n", "<F7>", function()
+vim.keymap.set("n", "<LocalLeader>L", function()
+	dap.list_breakpoints(true)
+end, { desc = "Debug: [L]ist breakpoints" })
+
+vim.keymap.set("n", "<LocalLeader>v", function()
 	require("dapui").toggle()
-end, { desc = "Debug: See last session result." })
+end, { desc = "Debug: Toggle debug [V]iew" })
 
-vim.keymap.set("n", "<F12>", function()
-	dap.step_out()
-end, { desc = "Debug: Step Out" })
-
-vim.keymap.set("n", "<F10>", function()
+vim.keymap.set("n", "<LocalLeader>n", function()
 	dap.step_over()
-end, { desc = "Debug: Step Over" })
+end, { desc = "Debug: Step over ([N]ext)" })
 
-vim.keymap.set("n", "<F11>", function()
+vim.keymap.set("n", "<LocalLeader>i", function()
 	dap.step_into()
-end, { desc = "Debug: Step Into" })
+end, { desc = "Debug: Step [I]nto" })
+
+vim.keymap.set("n", "<LocalLeader>o", function()
+	dap.step_out()
+end, { desc = "Debug: Step [O]ut" })
 
 local dapui = require("dapui")
 
@@ -105,9 +104,17 @@ for type, icon in pairs(breakpoint_icons) do
 	vim.fn.sign_define(tp, { text = icon, texthl = hl, numhl = hl })
 end
 
-dap.listeners.after.event_initialized["dapui_config"] = dapui.open
-dap.listeners.before.event_terminated["dapui_config"] = dapui.close
-dap.listeners.before.event_exited["dapui_config"] = dapui.close
+-- intellij-lsp has its own debug panel for Java sessions
+local function unless_intellij(fn)
+	return function(session)
+		if session.config.type ~= "intellij_jvm" then
+			fn()
+		end
+	end
+end
+dap.listeners.after.event_initialized["dapui_config"] = unless_intellij(dapui.open)
+dap.listeners.before.event_terminated["dapui_config"] = unless_intellij(dapui.close)
+dap.listeners.before.event_exited["dapui_config"] = unless_intellij(dapui.close)
 
 -- Install golang specific config
 require("dap-go").setup({
@@ -116,9 +123,6 @@ require("dap-go").setup({
 	},
 })
 
-vim.keymap.set("n", "<leader>dt", function()
-	require("dap-go").debug_test()
-end)
 dap.configurations.go = {
 	{
 		type = "delve",
@@ -143,5 +147,88 @@ dap.configurations.go = {
 	},
 }
 
-require("java").setup()
-vim.lsp.enable("jdtls")
+-- Context run/debug (IntelliJ's ContextRun, ContextDebug, Rerun)
+-- Java goes through intellij-lsp, Go through dap-go/delve.
+local last_run = nil
+
+local function context(no_debug)
+	local ft = vim.bo.filetype
+	if ft == "java" then
+		last_run = { lang = "java", uri = vim.uri_from_bufnr(0), no_debug = no_debug }
+		require("intellij-lsp.run").run_at_cursor(no_debug)
+	elseif ft == "go" then
+		last_run = { lang = "go" }
+		-- closest_test needs the go treesitter parser
+		local ok, test = pcall(require("dap-go-ts").closest_test)
+		if not ok then
+			vim.notify("No go treesitter parser, running the file instead of the test", vim.log.levels.WARN)
+		end
+		if ok and test.name and test.name ~= "" then
+			require("dap-go").debug_test({ noDebug = no_debug })
+		else
+			dap.run(vim.tbl_extend("force", dap.configurations.go[1], {
+				name = no_debug and "Run" or "Debug",
+				noDebug = no_debug,
+			}))
+		end
+	else
+		vim.notify(("No context run for %s"):format(ft), vim.log.levels.WARN)
+	end
+end
+
+-- The main class is only known once intellij-lsp has resolved it
+dap.listeners.after.event_initialized["context_rerun"] = function(session)
+	if session.config.type == "intellij_jvm" and last_run and last_run.lang == "java" then
+		last_run.main_class = session.config.mainClass
+	end
+end
+
+local function rerun()
+	if not last_run then
+		vim.notify("Nothing to rerun", vim.log.levels.WARN)
+	elseif last_run.lang == "java" then
+		if not last_run.main_class then
+			vim.notify("Nothing to rerun", vim.log.levels.WARN)
+			return
+		end
+		-- Not dap.run_last(): launch() rebuilds before running
+		require("intellij-lsp.run").launch(last_run.main_class, last_run.uri, last_run.no_debug)
+	else
+		dap.run_last()
+	end
+end
+
+local function is_intellij(session)
+	return session ~= nil and session.config.type == "intellij_jvm"
+end
+
+vim.keymap.set("n", "<LocalLeader>r", function()
+	context(true)
+end, { desc = "[R]un context" })
+
+vim.keymap.set("n", "<LocalLeader>d", function()
+	context(false)
+end, { desc = "[D]ebug context" })
+
+vim.keymap.set("n", "<LocalLeader>R", rerun, { desc = "[R]erun last run/debug" })
+
+vim.keymap.set("n", "<LocalLeader>c", function()
+	local session = dap.session()
+	if is_intellij(session) then
+		require("intellij-lsp.debug").continue()
+	elseif session then
+		dap.continue()
+	else
+		vim.notify("No debug session, start one with <LocalLeader>d", vim.log.levels.WARN)
+	end
+end, { desc = "Debug: [C]ontinue" })
+
+vim.keymap.set("n", "<LocalLeader>q", function()
+	local session = dap.session()
+	-- intellij-lsp's stop also cancels a build that has not launched yet
+	if is_intellij(session) or (not session and vim.bo.filetype == "java") then
+		require("intellij-lsp.run").stop()
+	elseif session then
+		dap.terminate()
+	end
+end, { desc = "[Q]uit run/debug session" })
